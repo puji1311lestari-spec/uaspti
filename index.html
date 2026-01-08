@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dilluvjidekor — Event Decoration</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root{
+      --bgTop:#f4f1e8;
+      --bgMid:#faf9f4;
+      --bgBot:#ffffff;
+
+      --gold:#c9b24a;
+      --goldDark:#b89f2f;
+      --goldBorder:#d9c66a;
+
+      --text:#141414;
+      --muted:#6b6b6b;
+
+      --panel:#ffffff;
+      --panelBorder:#e9e7df;
+
+      --shadow: 0 10px 28px rgba(0,0,0,.12);
+    }
+    body{
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--text);
+      background: linear-gradient(90deg, var(--bgTop) 0%, var(--bgMid) 40%, var(--bgBot) 100%);
+    }
+    .shadow-soft{ box-shadow: var(--shadow); }
+  </style>
+
+  <!-- React UMD + Babel (1 file) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body>
+  <div id="app"></div>
+
+<script type="text/babel">
+const {useEffect, useMemo, useState} = React;
+
+/* ===== utils ===== */
+const LS = {
+  get(k, d){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):d; }catch{return d;} },
+  set(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+};
+const cx = (...c) => c.filter(Boolean).join(" ");
+const formatIDR = (n) => new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(n);
+const nowISO = () => new Date().toISOString();
+const ppn11 = (subtotal) => Math.round(subtotal * 0.11);
+
+/* hash routing */
+function parseHash(){
+  const raw = (location.hash || "#/login").slice(1);
+  const [path, qs] = raw.split("?");
+  return { path: path || "/login", params: new URLSearchParams(qs || "") };
+}
+function useHashRoute(){
+  const [route, setRoute] = useState(parseHash());
+  useEffect(()=>{
+    const on = () => setRoute(parseHash());
+    window.addEventListener("hashchange", on);
+    return ()=>window.removeEventListener("hashchange", on);
+  },[]);
+  const push = (path, params) => {
+    const qs = params ? params.toString() : "";
+    location.hash = qs ? `#${path}?${qs}` : `#${path}`;
+  };
+  return {route, push};
+}
+
+/* ===== icons ===== */
+const Icon = {
+  spark:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M12 2l1.2 4.2L17.4 8 13.2 9.2 12 13.4 10.8 9.2 6.6 8l4.2-1.8L12 2z" fill="currentColor"/>
+      <path d="M19 12l.7 2.4L22 15l-2.3.6L19 18l-.7-2.4L16 15l2.3-.6L19 12z" fill="currentColor"/>
+      <path d="M5 13l.7 2.4L8 16l-2.3.6L5 19l-.7-2.4L2 16l2.3-.6L5 13z" fill="currentColor"/>
+    </svg>
+  ),
+  cart:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M6 6h15l-1.6 8.2a2 2 0 0 1-2 1.6H9a2 2 0 0 1-2-1.6L5.6 4.8A1.5 1.5 0 0 0 4.1 3.6H3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+      <circle cx="9.5" cy="19" r="1.4" fill="currentColor"/>
+      <circle cx="17.5" cy="19" r="1.4" fill="currentColor"/>
+    </svg>
+  ),
+  user:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M12 12a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 12z" stroke="currentColor" strokeWidth="1.8"/>
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    </svg>
+  ),
+  search:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" stroke="currentColor" strokeWidth="2"/>
+      <path d="M21 21l-4.2-4.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
+  send:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+    </svg>
+  ),
+  check:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ),
+  truck:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M3 6h11v10H3V6z" stroke="currentColor" strokeWidth="2"/>
+      <path d="M14 10h4l3 3v3h-7v-6z" stroke="currentColor" strokeWidth="2"/>
+      <circle cx="7" cy="18" r="2" fill="currentColor"/>
+      <circle cx="18" cy="18" r="2" fill="currentColor"/>
+    </svg>
+  ),
+  box:(p)=>(
+    <svg viewBox="0 0 24 24" fill="none" {...p}>
+      <path d="M21 8l-9 5-9-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <path d="M3 8v10a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 18V8" stroke="currentColor" strokeWidth="2"/>
+      <path d="M12 13v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+};
+
+/* ===== local images (sesuai folder & nama file user) ===== */
+function imgLocal(name){ return `image/${name}.jpg`; }
+
+/* ===== data ===== */
+const CATS = [
+  { id:"bunga", name:"Bunga Artificial", tone:"pink", icon:"🌸" },
+  { id:"lighting", name:"Lighting", tone:"yellow", icon:"💡" },
+  { id:"backdrop", name:"Backdrop", tone:"purple", icon:"🎨" },
+  { id:"balon", name:"Balon", tone:"blue", icon:"🎁" },
+];
+
+const PRODUCTS = [
+  {
+    id:"elegant",
+    title:"Elegant Event Package",
+    desc:"Paket lengkap untuk event mewah Anda",
+    category:"backdrop",
+    image: imgLocal("elegant"),
+    rating:5.0,
+    variants:[
+      {id:"basic50", name:"Paket Basic (50 orang)", stock:10, price:3500000},
+      {id:"std100", name:"Paket Standard (100 orang)", stock:8, price:5000000},
+      {id:"prem150", name:"Paket Premium (150 orang)", stock:5, price:6500000},
+      {id:"lux200", name:"Paket Luxury (200+ orang)", stock:3, price:8500000},
+    ]
+  },
+  {
+    id:"bunga-set",
+    title:"Bunga Artificial Set",
+    desc:"Bunga artificial cantik untuk dekorasi meja & backdrop",
+    category:"bunga",
+    image: imgLocal("bunga"),
+    rating:4.8,
+    variants:[
+      {id:"small", name:"Small Set", stock:15, price:299000},
+      {id:"medium", name:"Medium Set", stock:10, price:449000},
+      {id:"large", name:"Large Set", stock:6, price:649000},
+    ]
+  },
+  {
+    id:"lighting-warm",
+    title:"Lighting Warm White",
+    desc:"Lampu warm white untuk suasana elegan & cozy",
+    category:"lighting",
+    image: imgLocal("lighting"),
+    rating:4.7,
+    variants:[
+      {id:"10m", name:"10m", stock:30, price:99000},
+      {id:"20m", name:"20m", stock:18, price:159000},
+    ]
+  },
+  {
+    id:"balon-garland",
+    title:"Balon Garland Premium",
+    desc:"Balon garland lengkap untuk birthday dan event",
+    category:"balon",
+    image: imgLocal("balon"),
+    rating:4.9,
+    variants:[
+      {id:"80", name:"80 pcs", stock:22, price:249000},
+      {id:"120", name:"120 pcs", stock:14, price:349000},
+      {id:"180", name:"180 pcs", stock:8, price:499000},
+    ]
+  },
+];
+
+const PById = Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
+
+/* ===== UI primitives ===== */
+function Panel({children, className=""}){
+  return <div className={cx("bg-white border rounded-2xl shadow-soft", "border-[var(--panelBorder)]", className)}>{children}</div>;
+}
+function ButtonGold({children, className="", ...props}){
+  return (
+    <button {...props} className={cx(
+      "rounded-xl px-5 py-3 text-sm font-semibold text-white shadow-soft hover:brightness-[0.98] active:brightness-[0.95]",
+      "bg-[var(--gold)]",
+      className
+    )}>
+      {children}
+    </button>
+  );
+}
+function ButtonOutlineGold({children, className="", ...props}){
+  return (
+    <button {...props} className={cx(
+      "rounded-xl px-5 py-3 text-sm font-semibold shadow-soft",
+      "border-2 border-[var(--goldBorder)] bg-white text-[var(--goldDark)] hover:bg-[#fbf8ea]",
+      className
+    )}>
+      {children}
+    </button>
+  );
+}
+
+/* ===== header (logo kiri, search tengah, icon kanan) ===== */
+function TopBar({cartCount, onCart, onAccount, query, setQuery, onSearchSubmit, onNavHome}){
+  return (
+    <div className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-[var(--panelBorder)] shadow-soft">
+      <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-4">
+        <button onClick={onNavHome} className="flex items-center gap-3 min-w-[220px]">
+          <div className="w-12 h-12 rounded-full bg-[var(--gold)] text-white grid place-items-center shadow-soft">
+            <Icon.spark className="w-6 h-6" />
+          </div>
+          <div className="text-xl font-semibold text-[var(--goldDark)]">dilluvjidekor</div>
+        </button>
+
+        <form className="flex-1" onSubmit={(e)=>{e.preventDefault(); onSearchSubmit();}}>
+          <div className="mx-auto max-w-2xl relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+              <Icon.search className="w-5 h-5" />
+            </span>
+            <input
+              value={query}
+              onChange={(e)=>setQuery(e.target.value)}
+              placeholder="Cari produk dekorasi..."
+              className="w-full rounded-full border border-[var(--panelBorder)] bg-white px-12 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--goldBorder)]"
+            />
+          </div>
+        </form>
+
+        <div className="flex items-center gap-4 min-w-[110px] justify-end">
+          <button onClick={onCart} className="relative p-2 hover:opacity-80" title="Keranjang">
+            <Icon.cart className="w-7 h-7" />
+            {cartCount>0 && (
+              <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[var(--gold)] text-white text-xs font-bold grid place-items-center">
+                {cartCount}
+              </span>
+            )}
+          </button>
+          <button onClick={onAccount} className="p-2 hover:opacity-80" title="Akun">
+            <Icon.user className="w-7 h-7" />
+          </button>
+        </div>
+      </div>
+
+      {/* simple nav row biar persis navigasi klik */}
+      <div className="border-t border-[var(--panelBorder)]">
+        <div className="mx-auto max-w-6xl px-4 py-2 flex flex-wrap gap-2">
+          <NavBtn to="#/" label="Beranda" />
+          <NavBtn to="#/kategori" label="Kategori" />
+          <NavBtn to="#/katalog" label="Katalog" />
+          <NavBtn to="#/ai" label="AI Konsultasi" />
+          <NavBtn to="#/invoice" label="Invoice" />
+          <NavBtn to="#/lacak" label="Lacak" />
+        </div>
+      </div>
+    </div>
+  );
+}
+function NavBtn({to, label}){
+  return (
+    <a href={to} className="px-3 py-2 rounded-xl text-sm font-semibold border border-transparent hover:border-[var(--panelBorder)] hover:bg-[#faf9f4]">
+      {label}
+    </a>
+  );
+}
+
+/* ===== login page ===== */
+function LoginPage({onLogin}){
+  const [email,setEmail]=useState("");
+  const [pass,setPass]=useState("");
+  const [remember,setRemember]=useState(true);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-xl">
+        <Panel className="px-10 py-10">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-[var(--gold)] text-white grid place-items-center shadow-soft">
+              <Icon.spark className="w-7 h-7" />
+            </div>
+            <div className="mt-4 text-4xl font-semibold text-[var(--goldDark)]">dilluvjidekor</div>
+            <div className="mt-2 text-base text-[var(--muted)]">Wujudkan Event Impian Anda</div>
+          </div>
+
+          <div className="mt-10 space-y-6">
+            <label className="block">
+              <div className="text-lg font-semibold mb-2">Email</div>
+              <input
+                value={email}
+                onChange={(e)=>setEmail(e.target.value)}
+                placeholder="nama@email.com"
+                className="w-full rounded-xl border border-[var(--panelBorder)] bg-white px-5 py-4 text-lg outline-none focus:ring-2 focus:ring-[var(--goldBorder)] focus:border-[var(--goldBorder)]"
+              />
+            </label>
+
+            <label className="block">
+              <div className="text-lg font-semibold mb-2">Password</div>
+              <input
+                type="password"
+                value={pass}
+                onChange={(e)=>setPass(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-[var(--panelBorder)] bg-white px-5 py-4 text-lg outline-none"
+              />
+            </label>
+
+            <div className="flex items-center justify-between text-lg">
+              <label className="flex items-center gap-3 text-[var(--muted)]">
+                <input type="checkbox" checked={remember} onChange={(e)=>setRemember(e.target.checked)} className="w-5 h-5"/>
+                Ingat saya
+              </label>
+              <button type="button" className="text-[var(--goldDark)] hover:underline">Lupa password?</button>
+            </div>
+
+            <ButtonGold
+              className="w-full py-4 text-xl rounded-xl"
+              onClick={()=>{
+                if(!email || !pass) return alert("Isi email & password dulu ya.");
+                const session = {email, name: email.split("@")[0] || "User"};
+                if(remember) LS.set("session", session);
+                onLogin(session);
+              }}
+            >
+              Masuk
+            </ButtonGold>
+
+            <div className="mt-6 flex items-center gap-4 text-[var(--muted)]">
+              <div className="h-px flex-1 bg-[var(--panelBorder)]"></div>
+              <div>atau</div>
+              <div className="h-px flex-1 bg-[var(--panelBorder)]"></div>
+            </div>
+
+            <div className="text-center text-sm text-[var(--muted)]">
+              (Demo) login tersimpan di localStorage.
+            </div>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+/* ===== Home ===== */
+function HomePage({onNav}){
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="flex justify-center gap-4">
+        <ButtonGold onClick={()=>onNav("/katalog")}>Lihat Katalog</ButtonGold>
+        <ButtonOutlineGold onClick={()=>onNav("/ai")}>Konsultasi Gratis</ButtonOutlineGold>
+      </div>
+
+      <div className="mt-16 text-center text-5xl font-extrabold">Kategori Populer</div>
+      <div className="mt-14 grid grid-cols-1 md:grid-cols-4 gap-8">
+        {CATS.map(c => <CategoryCard key={c.id} c={c} onClick={()=>onNav("/katalog", new URLSearchParams({cat:c.id}))} />)}
+      </div>
+
+      <div className="mt-20 flex items-end justify-between">
+        <div className="text-5xl font-extrabold">Produk Terpopuler</div>
+        <button onClick={()=>onNav("/katalog")} className="text-xl font-semibold text-[var(--goldDark)] hover:underline">
+          Lihat Katalog Lengkap →
+        </button>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {PRODUCTS.map(p => (
+          <ProductCard
+            key={p.id}
+            p={p}
+            onOpen={()=>onNav("/detail", new URLSearchParams({id:p.id}))}
+            onPick={()=>onNav("/detail", new URLSearchParams({id:p.id, pick:"1"}))}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+function CategoryCard({c, onClick}){
+  const tone = {
+    pink: { bg:"#f7e7ef", border:"#f2b8d1", icon:"#c0136e", text:"#c0136e" },
+    yellow:{ bg:"#fbf8da", border:"#efe18f", icon:"#b8890a", text:"#b8890a" },
+    purple:{ bg:"#f0e9fb", border:"#d7c1f7", icon:"#7b1fd1", text:"#7b1fd1" },
+    blue:  { bg:"#eef6ff", border:"#b7d6ff", icon:"#1f59d1", text:"#1f59d1" },
+  }[c.tone];
+
+  return (
+    <button onClick={onClick}
+      className="rounded-2xl border-2 shadow-soft h-[170px] flex flex-col items-center justify-center gap-4"
+      style={{background:tone.bg, borderColor:tone.border}}
+    >
+      <div className="w-16 h-16 rounded-full bg-white/80 shadow-soft grid place-items-center"
+           style={{color:tone.icon}}>
+        <span className="text-3xl">{c.icon}</span>
+      </div>
+      <div className="text-2xl font-semibold" style={{color:tone.text}}>{c.name}</div>
+    </button>
+  );
+}
+
+/* ===== kategori page ===== */
+function CategoryPage({onNav}){
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="text-5xl font-extrabold text-center">Kategori</div>
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-8">
+        {CATS.map(c => (
+          <Panel key={c.id} className="p-6 text-center">
+            <div className="text-4xl">{c.icon}</div>
+            <div className="mt-3 text-2xl font-extrabold">{c.name}</div>
+            <div className="mt-2 text-[var(--muted)]">Klik untuk lihat produk</div>
+            <ButtonGold className="mt-6 w-full" onClick={()=>onNav("/katalog", new URLSearchParams({cat:c.id}))}>
+              Lihat
+            </ButtonGold>
+          </Panel>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===== product card ===== */
+function ProductCard({p, onOpen, onPick}){
+  const from = Math.min(...p.variants.map(v=>v.price));
+  return (
+    <Panel className="overflow-hidden">
+      <div className="h-40 bg-[#f6f6f6]">
+        <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+      </div>
+      <div className="p-4">
+        <div className="text-sm font-bold">{p.title}</div>
+        <div className="text-sm text-[var(--muted)] mt-1">{p.desc}</div>
+        <div className="mt-3 text-[var(--goldDark)] font-extrabold">{formatIDR(from)}</div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button onClick={onOpen} className="rounded-xl border border-[var(--panelBorder)] bg-white py-2 font-semibold hover:bg-[#faf9f4]">Detail</button>
+          <button onClick={onPick} className="rounded-xl bg-[var(--gold)] text-white py-2 font-semibold hover:brightness-[0.98]">Pilih Varian</button>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/* ===== katalog page ===== */
+function KatalogPage({cat, q, setQ, onSearch, onOpenDetail}){
+  const list = useMemo(()=>{
+    let arr = [...PRODUCTS];
+    if(cat) arr = arr.filter(p=>p.category===cat);
+    const s = (q||"").trim().toLowerCase();
+    if(s) arr = arr.filter(p => (p.title+" "+p.desc).toLowerCase().includes(s));
+    return arr;
+  },[cat,q]);
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="text-4xl font-extrabold">Katalog</div>
+
+      <div className="mt-3 flex flex-wrap gap-3 items-center">
+        <div className="text-[var(--muted)] text-lg">Filter:</div>
+        <button onClick={()=>location.hash="#/katalog"} className={cx("px-4 py-2 rounded-full border", !cat ? "bg-[#fbf8ea] border-[var(--goldBorder)] text-[var(--goldDark)] font-semibold" : "bg-white border-[var(--panelBorder)]")}>
+          Semua
+        </button>
+        {CATS.map(c=>(
+          <button key={c.id} onClick={()=>location.hash=`#/katalog?cat=${c.id}`}
+            className={cx("px-4 py-2 rounded-full border",
+              cat===c.id ? "bg-[#fbf8ea] border-[var(--goldBorder)] text-[var(--goldDark)] font-semibold" : "bg-white border-[var(--panelBorder)]"
+            )}
+          >
+            {c.name}
+          </button>
+        ))}
+      </div>
+
+      <Panel className="mt-6 p-5">
+        <div className="flex gap-3 items-center">
+          <div className="flex-1 relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"><Icon.search className="w-5 h-5"/></span>
+            <input value={q} onChange={(e)=>setQ(e.target.value)} placeholder="Cari produk dekorasi..."
+              className="w-full rounded-full border border-[var(--panelBorder)] px-12 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--goldBorder)]" />
+          </div>
+          <ButtonGold onClick={onSearch}>Cari</ButtonGold>
+        </div>
+      </Panel>
+
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {list.map(p=>(
+          <ProductCard
+            key={p.id}
+            p={p}
+            onOpen={()=>onOpenDetail(p.id,false)}
+            onPick={()=>onOpenDetail(p.id,true)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ===== detail + modal pilih varian ===== */
+function DetailPage({productId, openPick, onAddToCart, onOpenPick, onNav}){
+  const p = PById[productId];
+  if(!p) return (
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <Panel className="p-8">
+        <div className="text-2xl font-bold">Produk tidak ditemukan</div>
+        <ButtonGold className="mt-4" onClick={()=>onNav("/")}>Kembali</ButtonGold>
+      </Panel>
+    </div>
+  );
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="grid md:grid-cols-2 gap-8">
+        <Panel className="overflow-hidden">
+          <div className="h-[380px] bg-[#f6f6f6]">
+            <img src={p.image} alt={p.title} className="w-full h-full object-cover"/>
+          </div>
+        </Panel>
+
+        <Panel className="p-8">
+          <div className="text-3xl font-extrabold">{p.title}</div>
+          <div className="mt-2 text-lg text-[var(--muted)]">{p.desc}</div>
+          <div className="mt-6 flex items-center gap-3">
+            <span className="px-4 py-2 rounded-full border border-[var(--panelBorder)] bg-[#faf9f4] font-semibold">⭐ {p.rating}</span>
+            <span className="text-[var(--muted)]">Kategori: {CATS.find(c=>c.id===p.category)?.name}</span>
+          </div>
+
+          <ButtonGold className="mt-8 w-full py-4 text-lg" onClick={()=>onOpenPick(p)}>
+            Pilih Varian
+          </ButtonGold>
+          <ButtonOutlineGold className="mt-3 w-full py-4 text-lg" onClick={()=>onNav("/ai")}>
+            Konsultasi Gratis
+          </ButtonOutlineGold>
+        </Panel>
+      </div>
+
+      <VariantModal open={openPick} product={p} onClose={()=>onOpenPick(null)} onAdd={onAddToCart} />
+    </div>
+  );
+}
+function VariantModal({open, product, onClose, onAdd}){
+  const [selected, setSelected] = useState(null);
+  useEffect(()=>{
+    if(open && product) setSelected(product.variants[0]?.id ?? null);
+  },[open, product]);
+
+  if(!open || !product) return null;
+  const v = product.variants.find(x=>x.id===selected);
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/35" onClick={onClose}></div>
+
+      <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-xl -translate-x-1/2 -translate-y-1/2">
+        <Panel className="overflow-hidden">
+          <div className="px-6 py-5 border-b border-[var(--panelBorder)] flex items-center justify-between">
+            <div className="text-2xl font-extrabold">Pilih Varian</div>
+            <button onClick={onClose} className="text-[var(--muted)] hover:opacity-80">✕</button>
+          </div>
+
+          <div className="p-6">
+            <div className="text-xl font-bold">{product.title}</div>
+            <div className="text-[var(--muted)]">{product.desc}</div>
+
+            <div className="mt-6 space-y-4 max-h-[45vh] overflow-auto pr-1">
+              {product.variants.map(x=>{
+                const active = x.id===selected;
+                return (
+                  <button
+                    key={x.id}
+                    onClick={()=>setSelected(x.id)}
+                    className={cx(
+                      "w-full rounded-2xl border px-5 py-5 text-left transition",
+                      active ? "border-[var(--goldBorder)] bg-[#efe7b0]/35" : "border-[var(--panelBorder)] bg-white hover:bg-[#faf9f4]"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="text-lg font-extrabold text-[var(--goldDark)]">{x.name}</div>
+                        <div className="text-sm text-[var(--muted)] mt-1">Stok: {x.stock} tersedia</div>
+                      </div>
+                      <div className="text-lg font-extrabold">{formatIDR(x.price)}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button onClick={onClose} className="rounded-xl border border-[var(--panelBorder)] bg-white py-3 font-semibold hover:bg-[#faf9f4]">Batal</button>
+              <button
+                onClick={()=>{ if(v) onAdd(product, v); }}
+                className="rounded-xl bg-[var(--gold)] text-white py-3 font-semibold hover:brightness-[0.98]"
+              >
+                Tambah ke Keranjang
+              </button>
+            </div>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+/* ===== cart drawer ===== */
+function CartDrawer({open, items, onClose, onInc, onDec, onRemove, onCheckout}){
+  const subtotal = items.reduce((s,it)=>s+it.price*it.qty,0);
+  return (
+    <div className={cx("fixed inset-0 z-50", open ? "" : "pointer-events-none")}>
+      <div className={cx("absolute inset-0 bg-black/35 transition", open ? "opacity-100" : "opacity-0")} onClick={onClose}></div>
+
+      <div className={cx("absolute right-0 top-0 h-full w-[92vw] max-w-md bg-white shadow-soft transition",
+        open ? "translate-x-0" : "translate-x-full"
+      )}>
+        <div className="px-6 py-5 border-b border-[var(--panelBorder)] flex items-center justify-between">
+          <div className="text-2xl font-extrabold">Keranjang</div>
+          <button onClick={onClose} className="text-[var(--muted)] hover:opacity-80">Tutup</button>
+        </div>
+
+        <div className="p-6 h-[calc(100%-210px)] overflow-auto">
+          {items.length===0 ? (
+            <div className="text-[var(--muted)] text-lg">Keranjang masih kosong.</div>
+          ) : (
+            <div className="space-y-4">
+              {items.map(it=>(
+                <div key={it.key} className="rounded-2xl border border-[var(--panelBorder)] p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-lg font-extrabold truncate">{it.title}</div>
+                      <div className="text-[var(--goldDark)] font-semibold">{it.variantName}</div>
+                      <div className="text-[var(--muted)]">{formatIDR(it.price)}</div>
+                    </div>
+                    <button onClick={()=>onRemove(it.key)} className="text-[var(--muted)] hover:opacity-80">✕</button>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="inline-flex rounded-xl overflow-hidden border border-[var(--panelBorder)]">
+                      <button className="px-4 py-2 text-lg hover:bg-[#faf9f4]" onClick={()=>onDec(it.key)}>-</button>
+                      <div className="px-4 py-2 text-lg">{it.qty}</div>
+                      <button className="px-4 py-2 text-lg hover:bg-[#faf9f4]" onClick={()=>onInc(it.key)}>+</button>
+                    </div>
+                    <div className="text-lg font-extrabold">{formatIDR(it.price*it.qty)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-[var(--panelBorder)]">
+          <div className="flex items-center justify-between text-lg">
+            <div className="text-[var(--muted)]">Subtotal</div>
+            <div className="font-extrabold">{formatIDR(subtotal)}</div>
+          </div>
+          <ButtonGold className={cx("mt-4 w-full text-lg", items.length===0 && "opacity-50")} disabled={items.length===0}
+            onClick={onCheckout}
+          >
+            Checkout
+          </ButtonGold>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===== AI page ===== */
+function AIPage({onQuick, messages, input, setInput, onSend, onNavToCatalog}){
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <Panel className="p-8 bg-[#d6c066] rounded-2xl border border-[var(--goldBorder)]">
+        <div className="flex items-start gap-4">
+          <div className="w-14 h-14 rounded-full bg-white/90 grid place-items-center shadow-soft text-[var(--goldDark)]">
+            🤖
+          </div>
+          <div>
+            <div className="text-4xl font-extrabold">AI Konsultasi Gratis</div>
+            <div className="text-lg mt-1 text-[#3f3a22]">Powered by dilluvjidekor AI Assistant</div>
+            <div className="text-lg mt-3 text-[#3f3a22]">
+              Dapatkan rekomendasi dekorasi event yang sempurna dengan bantuan AI kami
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel className="mt-8 overflow-hidden">
+        <div className="p-6 bg-[#faf9f4] border-b border-[var(--panelBorder)] flex items-start gap-4">
+          <div className="w-10 h-10 rounded-full bg-[var(--gold)] text-white grid place-items-center shadow-soft">
+            <Icon.spark className="w-5 h-5"/>
+          </div>
+          <div>
+            <div className="text-lg">
+              <b>Halo!</b> Saya AI Assistant dilluvjidekor ✨ Ceritakan jenis event & jumlah tamu, saya kasih rekomendasi.
+            </div>
+            <div className="text-sm text-[var(--muted)] mt-2">21.49</div>
+          </div>
+        </div>
+
+        <div className="p-6 border-b border-[var(--panelBorder)]">
+          <div className="text-lg text-[var(--muted)] mb-4">Pertanyaan Cepat:</div>
+          <div className="flex flex-wrap gap-3">
+            {[
+              "Saya mau dekorasi pernikahan",
+              "Dekorasi ulang tahun anak",
+              "Rekomendasi backdrop",
+              "Hubungi customer service",
+            ].map(t=>(
+              <button key={t} onClick={()=>onQuick(t)}
+                className="px-5 py-3 rounded-full border border-[var(--panelBorder)] bg-white text-lg font-semibold hover:bg-[#faf9f4]"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6">
+            <button onClick={onNavToCatalog} className="text-[var(--goldDark)] font-semibold hover:underline">
+              → Lihat rekomendasi produk di katalog
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-4 max-h-[260px] overflow-auto pr-2">
+            {messages.map((m,i)=>(
+              <div key={i} className={cx("flex", m.role==="user" ? "justify-end" : "justify-start")}>
+                <div className={cx(
+                  "max-w-[80%] rounded-2xl px-5 py-4 text-lg border",
+                  m.role==="user" ? "bg-[#fbf8ea] border-[var(--goldBorder)]" : "bg-white border-[var(--panelBorder)]"
+                )}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex items-center gap-4">
+            <input
+              value={input}
+              onChange={(e)=>setInput(e.target.value)}
+              placeholder="Ketik pesan Anda..."
+              className="flex-1 rounded-full border border-[var(--panelBorder)] px-6 py-4 text-lg outline-none focus:ring-2 focus:ring-[var(--goldBorder)]"
+            />
+            <button
+              onClick={onSend}
+              className="w-16 h-16 rounded-full bg-[var(--gold)] text-white grid place-items-center shadow-soft hover:brightness-[0.98]"
+              title="Kirim"
+            >
+              <Icon.send className="w-7 h-7"/>
+            </button>
+          </div>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ===== checkout ===== */
+function CheckoutPage({cart, note, setNote, payment, setPayment, onPay}){
+  const subtotal = cart.reduce((s,it)=>s+it.price*it.qty,0);
+  const ppn = ppn11(subtotal);
+  const total = subtotal + ppn;
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="grid md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-8">
+          <Panel className="p-8">
+            <div className="text-2xl font-extrabold">Catatan Tambahan</div>
+            <textarea
+              value={note}
+              onChange={(e)=>setNote(e.target.value)}
+              placeholder="Tambahkan catatan khusus untuk pesanan Anda..."
+              className="mt-4 w-full h-[140px] rounded-2xl border-2 border-[var(--goldBorder)] px-6 py-5 text-lg outline-none"
+            />
+          </Panel>
+
+          <Panel className="p-8">
+            <div className="text-3xl font-extrabold">Metode Pembayaran</div>
+
+            <div className="mt-6 space-y-4">
+              {[
+                {id:"card", label:"Kartu Kredit/Debit", icon:"💳"},
+                {id:"ewallet", label:"E-Wallet (GoPay, OVO, Dana)", icon:"👛"},
+                {id:"bank", label:"Transfer Bank", icon:"🏦"},
+              ].map(opt=>{
+                const active = payment===opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={()=>setPayment(opt.id)}
+                    className={cx(
+                      "w-full rounded-2xl border-2 px-6 py-5 flex items-center gap-4 text-left shadow-soft",
+                      active ? "border-[var(--goldBorder)] bg-white" : "border-[var(--panelBorder)] bg-white hover:bg-[#faf9f4]"
+                    )}
+                  >
+                    <span className={cx("text-2xl", active ? "text-[var(--goldDark)]" : "text-black")}>{opt.icon}</span>
+                    <span className="text-xl font-semibold">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Panel>
+        </div>
+
+        <Panel className="p-8 h-fit">
+          {cart.map((it)=>(
+            <div key={it.key} className="pb-6 border-b border-[var(--panelBorder)] last:border-b-0 last:pb-0">
+              <div className="flex justify-between gap-3">
+                <div>
+                  <div className="text-lg font-semibold">{it.title}</div>
+                  <div className="text-[var(--muted)]">{it.variantName}</div>
+                  <div className="text-[var(--muted)]">Qty: {it.qty}</div>
+                </div>
+                <div className="text-lg font-semibold text-[var(--goldDark)]">{formatIDR(it.price*it.qty)}</div>
+              </div>
+            </div>
+          ))}
+
+          <div className="mt-8 space-y-3 text-lg">
+            <div className="flex justify-between">
+              <div className="text-[var(--muted)]">Subtotal</div>
+              <div className="text-[var(--muted)]">{formatIDR(subtotal)}</div>
+            </div>
+            <div className="flex justify-between">
+              <div className="text-[var(--muted)]">PPN (11%)</div>
+              <div className="text-[var(--muted)]">{formatIDR(ppn)}</div>
+            </div>
+            <div className="h-px bg-[var(--panelBorder)] my-4"></div>
+            <div className="flex justify-between items-center">
+              <div className="text-3xl font-extrabold">Total</div>
+              <div className="text-3xl font-extrabold text-[var(--goldDark)]">{formatIDR(total)}</div>
+            </div>
+          </div>
+
+          <ButtonGold className={cx("mt-8 w-full py-4 text-xl", cart.length===0 && "opacity-50")} disabled={cart.length===0} onClick={onPay}>
+            Bayar Sekarang
+          </ButtonGold>
+          <div className="mt-4 text-center text-[var(--muted)]">
+            Dengan melanjutkan, Anda menyetujui syarat dan ketentuan kami
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+/* ===== invoice ===== */
+function InvoicePage({invoice, onGoTrack, onGoHome}){
+  if(!invoice){
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10">
+        <Panel className="p-8">
+          <div className="text-3xl font-extrabold">Belum ada invoice</div>
+          <div className="text-[var(--muted)] mt-2">Checkout dulu ya.</div>
+          <ButtonGold className="mt-6" onClick={onGoHome}>Kembali</ButtonGold>
+        </Panel>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <Panel className="p-8">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <div className="text-4xl font-extrabold">Invoice</div>
+            <div className="text-[var(--muted)] text-lg mt-2">
+              #{invoice.id} • {new Date(invoice.createdAt).toLocaleString("id-ID")}
+            </div>
+          </div>
+          <ButtonGold onClick={onGoTrack}>Lacak Pengiriman</ButtonGold>
+        </div>
+
+        <div className="mt-8 grid md:grid-cols-2 gap-8">
+          <Panel className="p-6">
+            <div className="text-2xl font-extrabold">Items</div>
+            <div className="mt-4 space-y-3">
+              {invoice.items.map(it=>(
+                <div key={it.key} className="rounded-2xl border border-[var(--panelBorder)] bg-[#faf9f4] p-5">
+                  <div className="text-lg font-extrabold">{it.title}</div>
+                  <div className="text-[var(--goldDark)] font-semibold">{it.variantName} × {it.qty}</div>
+                  <div className="text-lg font-extrabold mt-2">{formatIDR(it.price*it.qty)}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel className="p-6">
+            <div className="text-2xl font-extrabold">Ringkasan</div>
+            <div className="mt-4 text-lg space-y-3">
+              <Row label="Subtotal" value={formatIDR(invoice.totals.subtotal)} />
+              <Row label="PPN (11%)" value={formatIDR(invoice.totals.ppn)} />
+              <div className="h-px bg-[var(--panelBorder)] my-3"></div>
+              <Row big label="Total" value={formatIDR(invoice.totals.total)} />
+              <div className="mt-6 text-[var(--muted)]">
+                Tracking Code: <b className="text-black">{invoice.trackingCode}</b>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+function Row({label, value, big}){
+  return (
+    <div className="flex justify-between items-center">
+      <div className={cx(big ? "text-2xl font-extrabold" : "text-[var(--muted)]")}>{label}</div>
+      <div className={cx(big ? "text-2xl font-extrabold text-[var(--goldDark)]" : "text-[var(--muted)]")}>{value}</div>
+    </div>
+  );
+}
+
+/* ===== tracking ===== */
+function TrackPage({trackingCode, onGoHome}){
+  const steps = [
+    { key:"prep",  title:"Persiapan Dekorasi", desc:"Tim kami sedang mempersiapkan dekorasi Anda", time:"16 Des 2024 • 09:00 WIB", icon:"check", status:"Selesai", statusTone:"green", active:true },
+    { key:"ship",  title:"Dalam Pengiriman", desc:"Dekorasi sedang dalam perjalanan ke lokasi event", time:"17 Des 2024 • 08:00 WIB", icon:"truck", status:"Sedang Berlangsung", statusTone:"yellow", active:true },
+    { key:"install",title:"Pemasangan", desc:"Tim akan melakukan pemasangan dekorasi di lokasi event", time:"17 Des 2024 • 14:00 WIB", icon:"box", status:"", statusTone:"", active:false },
+    { key:"done",  title:"Selesai", desc:"Dekorasi selesai dipasang dan siap digunakan", time:"", icon:"box", status:"", statusTone:"", active:false },
+  ];
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      <Panel className="p-8">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-4xl font-extrabold">Lacak Pengiriman</div>
+            <div className="text-[var(--muted)] text-lg mt-2">
+              Tracking: <b className="text-black">{trackingCode || "TRK-XXXXXX"}</b>
+            </div>
+          </div>
+          <ButtonGold onClick={onGoHome}>Kembali</ButtonGold>
+        </div>
+
+        <div className="mt-10 relative">
+          <div className="absolute left-14 top-0 bottom-0 w-[2px] bg-[var(--panelBorder)]"></div>
+
+          <div className="space-y-14">
+            {steps.map((s)=>(
+              <div key={s.key} className="flex gap-8">
+                <div className="w-28 flex justify-center relative">
+                  <div className={cx(
+                      "w-16 h-16 rounded-full shadow-soft grid place-items-center",
+                      s.icon==="check" ? "bg-[#c9f4d6] text-[#1e7a3a]" :
+                      s.icon==="truck" ? "bg-[#d7c066] text-white" :
+                      "bg-[#efefef] text-[#777]"
+                    )}>
+                    {s.icon==="check" && <Icon.check className="w-7 h-7" />}
+                    {s.icon==="truck" && <Icon.truck className="w-7 h-7" />}
+                    {s.icon==="box" && <Icon.box className="w-7 h-7" />}
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className={cx("text-3xl font-extrabold", s.active ? "" : "text-[#9b9b9b]")}>{s.title}</div>
+                      <div className={cx("text-xl mt-2", s.active ? "text-[var(--muted)]" : "text-[#b4b4b4]")}>{s.desc}</div>
+                      {s.time && <div className={cx("text-lg mt-2", s.active ? "text-[var(--muted)]" : "text-[#bdbdbd]")}>{s.time}</div>}
+                    </div>
+
+                    {s.status && (
+                      <div className={cx(
+                          "px-5 py-2 rounded-full text-lg font-semibold",
+                          s.statusTone==="green" ? "bg-[#dff7e7] text-[#1e7a3a]" : "bg-[#fbf3cf] text-[#b89f2f]"
+                        )}>
+                        {s.status}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ===== App ===== */
+function App(){
+  const {route, push} = useHashRoute();
+
+  const [session, setSession] = useState(()=>LS.get("session", null));
+
+  const [query, setQuery] = useState("");
+  const [katalogQ, setKatalogQ] = useState("");
+  const [cartOpen, setCartOpen] = useState(false);
+
+  const [cart, setCart] = useState(()=>LS.get("cart", []));
+  useEffect(()=>LS.set("cart", cart), [cart]);
+
+  const cartCount = cart.reduce((s,it)=>s+it.qty,0);
+
+  const [pickOpen, setPickOpen] = useState(false);
+  const [pickProduct, setPickProduct] = useState(null);
+
+  const [note, setNote] = useState("");
+  const [payment, setPayment] = useState("card");
+
+  const [invoice, setInvoice] = useState(()=>LS.get("invoice", null));
+  useEffect(()=>LS.set("invoice", invoice), [invoice]);
+
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiInput, setAiInput] = useState("");
+
+  const nav = (path, params) => {
+    const qs = params ? params.toString() : "";
+    push(path, params);
+  };
+
+  // auth gate
+  useEffect(()=>{
+    if(!session && route.path !== "/login") push("/login");
+    if(session && route.path === "/login") push("/");
+  },[session, route.path]);
+
+  const addToCart = (product, variant) => {
+    const key = product.id+"::"+variant.id;
+    setCart(prev=>{
+      const idx = prev.findIndex(x=>x.key===key);
+      if(idx>=0){
+        const cp=[...prev];
+        cp[idx]={...cp[idx], qty: cp[idx].qty+1};
+        return cp;
+      }
+      return [...prev, {
+        key,
+        productId: product.id,
+        variantId: variant.id,
+        title: product.title,
+        variantName: variant.name,
+        price: variant.price,
+        qty: 1
+      }];
+    });
+    setPickOpen(false);
+    setCartOpen(true);
+  };
+
+  const inc = (key)=>setCart(prev=>prev.map(x=>x.key===key?{...x,qty:x.qty+1}:x));
+  const dec = (key)=>setCart(prev=>prev.map(x=>x.key===key?{...x,qty:Math.max(1,x.qty-1)}:x));
+  const remove = (key)=>setCart(prev=>prev.filter(x=>x.key!==key));
+
+  const goCheckout = ()=>{ setCartOpen(false); push("/checkout"); };
+
+  const payNow = ()=>{
+    if(cart.length===0) return alert("Keranjang kosong.");
+    const subtotal = cart.reduce((s,it)=>s+it.price*it.qty,0);
+    const ppn = ppn11(subtotal);
+    const total = subtotal + ppn;
+    const inv = {
+      id: "DLJ-" + Math.floor(100000 + Math.random()*900000),
+      createdAt: nowISO(),
+      trackingCode: "TRK-" + Math.floor(100000 + Math.random()*900000),
+      items: cart,
+      totals: { subtotal, ppn, total },
+      note,
+      payment
+    };
+    setInvoice(inv);
+    setCart([]);
+    push("/invoice");
+  };
+
+  const onSearchSubmit = ()=>{
+    const q = query.trim();
+    setKatalogQ(q);
+    push("/katalog", q ? new URLSearchParams({q}) : undefined);
+  };
+
+  const openDetail = (id, pick=false)=>{
+    const params = new URLSearchParams({id});
+    if(pick) params.set("pick","1");
+    push("/detail", params);
+  };
+
+  const openPick = (pOrNull)=>{
+    if(!pOrNull){ setPickOpen(false); setPickProduct(null); return; }
+    setPickProduct(pOrNull);
+    setPickOpen(true);
+  };
+
+  const replyAI = (t)=>{
+    const low=t.toLowerCase();
+    if(low.includes("pernikahan")) return "Untuk pernikahan, rekomendasi: Elegant Event Package + Lighting. Mau tema gold/white/pastel?";
+    if(low.includes("ulang tahun")) return "Untuk ulang tahun, Balon Garland + Backdrop cocok banget. Mau tema pastel atau karakter?";
+    if(low.includes("backdrop")) return "Backdrop terbaik: Elegant Event Package (Standard/Premium). Jumlah tamu berapa?";
+    if(low.includes("customer")) return "Bisa ya! Kamu tulis kebutuhan kamu di sini, nanti aku arahkan ke produk yang pas.";
+    return "Oke! Ceritakan jenis event, jumlah tamu, dan tema warna ya 🙂";
+  };
+  const aiQuick = (t)=>{
+    setAiMessages(prev=>[...prev, {role:"user", text:t}, {role:"ai", text: replyAI(t)}]);
+  };
+  const aiSend = ()=>{
+    const t = aiInput.trim();
+    if(!t) return;
+    setAiMessages(prev=>[...prev, {role:"user", text:t}, {role:"ai", text: replyAI(t)}]);
+    setAiInput("");
+  };
+
+  // auto open pick from pick=1
+  useEffect(()=>{
+    if(route.path === "/detail" && route.params.get("pick")==="1"){
+      const id = route.params.get("id");
+      const p = id ? PById[id] : null;
+      if(p){
+        openPick(p);
+        const params = new URLSearchParams(route.params);
+        params.delete("pick");
+        // clean url
+        setTimeout(()=>push("/detail", params), 0);
+      }
+    }
+  },[route.path, route.params.toString()]);
+
+  let page = null;
+
+  if(route.path === "/login"){
+    page = <LoginPage onLogin={(s)=>{ setSession(s); LS.set("session", s); push("/"); }} />;
+  } else {
+    const cat = route.params.get("cat") || "";
+    const q = route.params.get("q") || katalogQ;
+
+    page = (
+      <>
+        <TopBar
+          cartCount={cartCount}
+          onCart={()=>setCartOpen(true)}
+          onAccount={()=>{
+            const ok = confirm(`Akun: ${session?.email}\n\nLogout?`);
+            if(ok){
+              LS.set("session", null);
+              setSession(null);
+              push("/login");
+            }
+          }}
+          query={query}
+          setQuery={setQuery}
+          onSearchSubmit={onSearchSubmit}
+          onNavHome={()=>push("/")}
+        />
+
+        {route.path === "/" && <HomePage onNav={push} />}
+        {route.path === "/kategori" && <CategoryPage onNav={push} />}
+
+        {route.path === "/katalog" && (
+          <KatalogPage
+            cat={cat}
+            q={q}
+            setQ={setKatalogQ}
+            onSearch={()=>{
+              const params = new URLSearchParams();
+              if(cat) params.set("cat", cat);
+              if(katalogQ) params.set("q", katalogQ);
+              push("/katalog", params);
+            }}
+            onOpenDetail={openDetail}
+          />
+        )}
+
+        {route.path === "/detail" && (
+          <DetailPage
+            productId={route.params.get("id")}
+            openPick={pickOpen && pickProduct?.id===route.params.get("id")}
+            onAddToCart={addToCart}
+            onOpenPick={(p)=>{ if(!p) openPick(null); else openPick(p); }}
+            onNav={push}
+          />
+        )}
+
+        {route.path === "/ai" && (
+          <AIPage
+            onQuick={aiQuick}
+            messages={aiMessages}
+            input={aiInput}
+            setInput={setAiInput}
+            onSend={aiSend}
+            onNavToCatalog={()=>push("/katalog")}
+          />
+        )}
+
+        {route.path === "/checkout" && (
+          <CheckoutPage
+            cart={cart}
+            note={note}
+            setNote={setNote}
+            payment={payment}
+            setPayment={setPayment}
+            onPay={payNow}
+          />
+        )}
+
+        {route.path === "/invoice" && (
+          <InvoicePage
+            invoice={invoice}
+            onGoTrack={()=>push("/lacak", new URLSearchParams({code: invoice?.trackingCode || ""}))}
+            onGoHome={()=>push("/")}
+          />
+        )}
+
+        {route.path === "/lacak" && (
+          <TrackPage trackingCode={route.params.get("code") || invoice?.trackingCode} onGoHome={()=>push("/")} />
+        )}
+
+        <CartDrawer
+          open={cartOpen}
+          items={cart}
+          onClose={()=>setCartOpen(false)}
+          onInc={inc}
+          onDec={dec}
+          onRemove={remove}
+          onCheckout={goCheckout}
+        />
+      </>
+    );
+  }
+
+  return page;
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
+</script>
+</body>
+</html>
