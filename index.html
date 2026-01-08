@@ -32,7 +32,6 @@
     .shadow-soft{ box-shadow: var(--shadow); }
   </style>
 
-  <!-- React UMD + Babel (1 file) -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -44,7 +43,7 @@
 <script type="text/babel">
 const {useEffect, useMemo, useState} = React;
 
-/* ===== utils ===== */
+
 const LS = {
   get(k, d){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):d; }catch{return d;} },
   set(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
@@ -54,7 +53,7 @@ const formatIDR = (n) => new Intl.NumberFormat("id-ID",{style:"currency",currenc
 const nowISO = () => new Date().toISOString();
 const ppn11 = (subtotal) => Math.round(subtotal * 0.11);
 
-/* hash routing */
+
 function parseHash(){
   const raw = (location.hash || "#/login").slice(1);
   const [path, qs] = raw.split("?");
@@ -74,7 +73,7 @@ function useHashRoute(){
   return {route, push};
 }
 
-/* ===== icons ===== */
+
 const Icon = {
   spark:(p)=>(
     <svg viewBox="0 0 24 24" fill="none" {...p}>
@@ -130,10 +129,10 @@ const Icon = {
   )
 };
 
-/* ===== local images (sesuai folder & nama file user) ===== */
+
 function imgLocal(name){ return `image/${name}.jpg`; }
 
-/* ===== data ===== */
+
 const CATS = [
   { id:"bunga", name:"Bunga Artificial", tone:"pink", icon:"🌸" },
   { id:"lighting", name:"Lighting", tone:"yellow", icon:"💡" },
@@ -225,7 +224,7 @@ function ButtonOutlineGold({children, className="", ...props}){
   );
 }
 
-/* ===== header (logo kiri, search tengah, icon kanan) ===== */
+
 function TopBar({cartCount, onCart, onAccount, query, setQuery, onSearchSubmit, onNavHome}){
   return (
     <div className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-[var(--panelBorder)] shadow-soft">
@@ -266,7 +265,7 @@ function TopBar({cartCount, onCart, onAccount, query, setQuery, onSearchSubmit, 
         </div>
       </div>
 
-      {/* simple nav row biar persis navigasi klik */}
+  
       <div className="border-t border-[var(--panelBorder)]">
         <div className="mx-auto max-w-6xl px-4 py-2 flex flex-wrap gap-2">
           <NavBtn to="#/" label="Beranda" />
@@ -288,7 +287,7 @@ function NavBtn({to, label}){
   );
 }
 
-/* ===== login page ===== */
+
 function LoginPage({onLogin}){
   const [email,setEmail]=useState("");
   const [pass,setPass]=useState("");
@@ -355,7 +354,7 @@ function LoginPage({onLogin}){
             </div>
 
             <div className="text-center text-sm text-[var(--muted)]">
-              (Demo) login tersimpan di localStorage.
+              Daftar sekarang
             </div>
           </div>
         </Panel>
@@ -364,7 +363,7 @@ function LoginPage({onLogin}){
   );
 }
 
-/* ===== Home ===== */
+
 function HomePage({onNav}){
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -420,7 +419,7 @@ function CategoryCard({c, onClick}){
   );
 }
 
-/* ===== kategori page ===== */
+
 function CategoryPage({onNav}){
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -441,7 +440,7 @@ function CategoryPage({onNav}){
   );
 }
 
-/* ===== product card ===== */
+
 function ProductCard({p, onOpen, onPick}){
   const from = Math.min(...p.variants.map(v=>v.price));
   return (
@@ -462,7 +461,7 @@ function ProductCard({p, onOpen, onPick}){
   );
 }
 
-/* ===== katalog page ===== */
+
 function KatalogPage({cat, q, setQ, onSearch, onOpenDetail}){
   const list = useMemo(()=>{
     let arr = [...PRODUCTS];
@@ -517,7 +516,7 @@ function KatalogPage({cat, q, setQ, onSearch, onOpenDetail}){
   );
 }
 
-/* ===== detail + modal pilih varian ===== */
+
 function DetailPage({productId, openPick, onAddToCart, onOpenPick, onNav}){
   const p = PById[productId];
   if(!p) return (
@@ -684,7 +683,7 @@ function CartDrawer({open, items, onClose, onInc, onDec, onRemove, onCheckout}){
   );
 }
 
-/* ===== AI page ===== */
+
 function AIPage({onQuick, messages, input, setInput, onSend, onNavToCatalog}){
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -775,7 +774,7 @@ function AIPage({onQuick, messages, input, setInput, onSend, onNavToCatalog}){
   );
 }
 
-/* ===== checkout ===== */
+
 function CheckoutPage({cart, note, setNote, payment, setPayment, onPay}){
   const subtotal = cart.reduce((s,it)=>s+it.price*it.qty,0);
   const ppn = ppn11(subtotal);
@@ -865,7 +864,7 @@ function CheckoutPage({cart, note, setNote, payment, setPayment, onPay}){
   );
 }
 
-/* ===== invoice ===== */
+
 function InvoicePage({invoice, onGoTrack, onGoHome}){
   if(!invoice){
     return (
@@ -932,7 +931,7 @@ function Row({label, value, big}){
   );
 }
 
-/* ===== tracking ===== */
+
 function TrackPage({trackingCode, onGoHome}){
   const steps = [
     { key:"prep",  title:"Persiapan Dekorasi", desc:"Tim kami sedang mempersiapkan dekorasi Anda", time:"16 Des 2024 • 09:00 WIB", icon:"check", status:"Selesai", statusTone:"green", active:true },
@@ -1000,7 +999,7 @@ function TrackPage({trackingCode, onGoHome}){
   );
 }
 
-/* ===== App ===== */
+
 function App(){
   const {route, push} = useHashRoute();
 
@@ -1246,3 +1245,4 @@ ReactDOM.createRoot(document.getElementById("app")).render(<App/>);
 </script>
 </body>
 </html>
+
